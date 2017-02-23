@@ -1,9 +1,16 @@
 package com.prime.busstopalert.activity;
 
+import android.Manifest;
+import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Typeface;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -11,6 +18,8 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.TextView;
@@ -35,15 +44,67 @@ public class MainActivity extends AppCompatActivity {
     DatabaseHelper helpher;
     List<BusStop> dbList;
     RecyclerView mRecyclerView;
+    protected CheckBox mCheckUsedGps;
+    protected TextView mTextView;
+    private LocationManager mLocationManager;
     private RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
     static String[] vName;
-    static double lat=0.0;
-    static double lng=0.0;
+    static double lat = 0.0;
+    static double lng = 0.0;
+    static double currentLat = 0.0;
+    static double currentLng = 0.0;
     static int doing;
     ArrayAdapter<String> dataAdapter = null;
     android.widget.SearchView search;
     MyAdapter myAdapter;
+
+    private LocationListener mLocationListener = new LocationListener() {
+
+        @Override
+        public void onLocationChanged(Location location) {
+
+            if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+            mLocationManager.removeUpdates(this);
+
+            if (location != null) {
+                if (mTextView != null) {
+                    mTextView.setText("Lat : " + location.getLatitude() + " - Lng : " + location.getLongitude());
+                    currentLat = location.getLatitude();
+                    currentLng = location.getLongitude();
+                }
+                findNearest(currentLat, currentLng);
+            }
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+            if (mTextView != null) {
+                mTextView.setText("GPS is enabled!");
+            }
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+            if (mTextView != null) {
+                mTextView.setText("GPS is not enabled!");
+            }
+        }
+
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,7 +151,20 @@ public class MainActivity extends AppCompatActivity {
 //            textView.setMMText(name);
 //            Log.i("name",name);
 //        }
+        mTextView = (TextView) findViewById(R.id.textLocation);
+        mCheckUsedGps = (CheckBox) findViewById(R.id.checkGpsOnly);
 
+        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        Button btnCheck = (Button) findViewById(R.id.buttonCheck);
+        btnCheck.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                checkLocation();
+                findNearest(currentLat,currentLng);
+            }
+        });
 
         final ListView listView = (ListView) findViewById(R.id.list_view);
 
@@ -109,9 +183,9 @@ public class MainActivity extends AppCompatActivity {
             Log.i("length", vName[0] + "");
         }
 
-        dataAdapter = new ArrayAdapter<String>(MainActivity.this, R.layout.list_item,R.id.lst_name, vName);
+        dataAdapter = new ArrayAdapter<String>(MainActivity.this, R.layout.list_item, R.id.lst_name, vName);
 
-        myAdapter = new MyAdapter(MainActivity.this,vName);
+        myAdapter = new MyAdapter(MainActivity.this, vName);
 
         listView.setAdapter(dataAdapter);
 
@@ -140,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
                     lat = cursor.getDouble(cursor.getColumnIndex("LAT"));
                     lng = cursor.getDouble(cursor.getColumnIndex("LNG"));
 
-                     Toast.makeText(MainActivity.this, "Detail "+itemValue+"\n"+lat+"\n"+lng+"\n", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Detail " + itemValue + "\n" + lat + "\n" + lng + "\n", Toast.LENGTH_SHORT).show();
 
 //                    final AppCompatDialog appCompatDialog = new AppCompatDialog(getApplicationContext(), R.style.Theme_CustomDialog);
 //                    appCompatDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
@@ -220,8 +294,8 @@ public class MainActivity extends AppCompatActivity {
                     for (int a = 0; a < j; a++) {
                         name[a] = arr[a];
                     }
-                    dataAdapter = new ArrayAdapter<String>(getApplicationContext(), android.R.layout.simple_list_item_1,  vName);
-                    myAdapter = new MyAdapter(MainActivity.this,vName);
+                    dataAdapter = new ArrayAdapter<String>(getApplicationContext(), android.R.layout.simple_list_item_1, vName);
+                    myAdapter = new MyAdapter(MainActivity.this, vName);
                     // final EditText det = (EditText) findViewById(R.id.editText);
 
                     listView.setAdapter(dataAdapter);
@@ -245,6 +319,32 @@ public class MainActivity extends AppCompatActivity {
 //            } while (cursor.moveToNext());
 //            Log.i("length", name[0] + "");
 //        }
+    }
+
+    protected void checkLocation() {
+        if (mCheckUsedGps != null && mCheckUsedGps.isChecked()) {
+            if (mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    // TODO: Consider calling
+                    //    ActivityCompat#requestPermissions
+                    // here to request the missing permissions, and then overriding
+                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                    //                                          int[] grantResults)
+                    // to handle the case where the user grants the permission. See the documentation
+                    // for ActivityCompat#requestPermissions for more details.
+                    return;
+                }
+                mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
+            } else {
+                mTextView.setText("GPS is not enabled!");
+            }
+        } else {
+            if (mLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mLocationListener);
+            } else {
+                mTextView.setText("Can't connect to internet!");
+            }
+        }
     }
 
     private void copyDataBase() {
@@ -285,4 +385,8 @@ public class MainActivity extends AppCompatActivity {
         File dbFile = new File(DB_PATH + DB_NAME);
         return dbFile.exists();
     }//
+
+    protected void findNearest(double x, double y) {
+
+    }
 }
