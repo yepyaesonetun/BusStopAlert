@@ -3,6 +3,7 @@ package com.prime.busstopalert.activity;
 import android.Manifest;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Typeface;
@@ -10,6 +11,8 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
@@ -28,8 +31,8 @@ import android.widget.Toast;
 import com.prime.busstopalert.R;
 import com.prime.busstopalert.adapter.MyAdapter;
 import com.prime.busstopalert.database.DatabaseHelper;
+import com.prime.busstopalert.location.LocService;
 import com.prime.busstopalert.mflib.PrimeMMTextView;
-import com.prime.busstopalert.model.BusStop;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -37,13 +40,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    DatabaseHelper helpher;
-    List<BusStop> dbList;
-    RecyclerView mRecyclerView;
+//    DatabaseHelper helpher;
+//    List<BusStop> dbList;
+//    RecyclerView mRecyclerView;
     protected CheckBox mCheckUsedGps;
     protected TextView mTextView;
     private LocationManager mLocationManager;
@@ -55,11 +57,13 @@ public class MainActivity extends AppCompatActivity {
     static double currentLat = 0.0;
     static double currentLng = 0.0;
     static int doing;
+    public static Context appContext;
     ArrayAdapter<String> dataAdapter = null;
     android.widget.SearchView search;
     MyAdapter myAdapter;
 
     private LocationListener mLocationListener = new LocationListener() {
+
 
         @Override
         public void onLocationChanged(Location location) {
@@ -161,8 +165,12 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onClick(View v) {
-                checkLocation();
-                findNearest(currentLat,currentLng);
+                //checkLocation();
+                //findNearest(currentLat,currentLng);
+                MainActivity.appContext=MainActivity.this.getApplicationContext();
+                Toast.makeText(MainActivity.this,"started",Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MainActivity.this, LocService.class);
+                startService(intent);
             }
         });
 
@@ -334,13 +342,23 @@ public class MainActivity extends AppCompatActivity {
                     // for ActivityCompat#requestPermissions for more details.
                     return;
                 }
-                mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
+               // mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
+
+                // service start
+//                Toast.makeText(MainActivity.this,"started",Toast.LENGTH_SHORT).show();
+//                Intent intent = new Intent(MainActivity.this, LocService.class);
+//                startService(intent);
             } else {
                 mTextView.setText("GPS is not enabled!");
             }
         } else {
             if (mLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mLocationListener);
+               // mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mLocationListener);
+
+                // service start
+//                Toast.makeText(MainActivity.this,"started",Toast.LENGTH_SHORT).show();
+//                Intent intent = new Intent(MainActivity.this, LocService.class);
+//                startService(intent);
             } else {
                 mTextView.setText("Can't connect to internet!");
             }
@@ -388,5 +406,10 @@ public class MainActivity extends AppCompatActivity {
 
     protected void findNearest(double x, double y) {
 
+    }
+
+    public static void runOnUI(Runnable runnable) {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(runnable);
     }
 }
