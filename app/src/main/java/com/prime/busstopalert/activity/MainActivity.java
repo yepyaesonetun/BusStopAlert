@@ -167,10 +167,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 //checkLocation();
                 //findNearest(currentLat,currentLng);
-                MainActivity.appContext=MainActivity.this.getApplicationContext();
-                Toast.makeText(MainActivity.this,"started",Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(MainActivity.this, LocService.class);
-                startService(intent);
+                //loadService();
             }
         });
 
@@ -329,6 +326,13 @@ public class MainActivity extends AppCompatActivity {
 //        }
     }
 
+    private void loadService() {
+        MainActivity.appContext=MainActivity.this.getApplicationContext();
+        Toast.makeText(MainActivity.this,"started",Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(MainActivity.this, LocService.class);
+        startService(intent);
+    }
+
     protected void checkLocation() {
         if (mCheckUsedGps != null && mCheckUsedGps.isChecked()) {
             if (mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
@@ -342,23 +346,20 @@ public class MainActivity extends AppCompatActivity {
                     // for ActivityCompat#requestPermissions for more details.
                     return;
                 }
-               // mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
+                mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
 
-                // service start
-//                Toast.makeText(MainActivity.this,"started",Toast.LENGTH_SHORT).show();
-//                Intent intent = new Intent(MainActivity.this, LocService.class);
-//                startService(intent);
+                // ..service start..
+                //loadService();
+
             } else {
                 mTextView.setText("GPS is not enabled!");
             }
         } else {
             if (mLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-               // mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mLocationListener);
+                mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mLocationListener);
 
-                // service start
-//                Toast.makeText(MainActivity.this,"started",Toast.LENGTH_SHORT).show();
-//                Intent intent = new Intent(MainActivity.this, LocService.class);
-//                startService(intent);
+                // ..service start..
+                //loadService();
             } else {
                 mTextView.setText("Can't connect to internet!");
             }
